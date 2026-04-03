@@ -3,10 +3,10 @@ from fastapi import FastAPI
 import mysql.connector
 from fastapi.middleware.cors import CORSMiddleware
 
-# --- YAHAN DEKHO: Ye line top-level par honi zaroori hai ---
+# --- YE LINE SABSE ZAROORI HAI (Top-Level) ---
 app = FastAPI()
 
-# CORS settings (Frontend se connect karne ke liye)
+# CORS allow karna zaroori hai
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,7 +15,7 @@ app.add_middleware(
 )
 
 def get_db_connection():
-    # Aiven Cloud MySQL connection
+    # Aiven Cloud MySQL connection using Environment Variables
     return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
@@ -27,8 +27,9 @@ def get_db_connection():
 @app.get("/")
 def home():
     return {
+        "status": "online",
         "message": "Data Engineering Pipeline API is Live!",
-        "endpoints": ["/jobs", "/status"]
+        "endpoint": "/jobs"
     }
 
 @app.get("/jobs")
@@ -37,7 +38,7 @@ def get_jobs():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Table name check kar lena (tune 'final_jfp' rakha tha na?)
+        # Table name wahi rakhna jo tune database mein banaya hai
         cursor.execute("SELECT * FROM final_jfp LIMIT 100")
         
         result = cursor.fetchall()
@@ -50,7 +51,7 @@ def get_jobs():
             "data": result
         }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-# Vercel ko niche wale __main__ ki zaroorat nahi hoti, 
-# wo upar wale 'app' variable se kaam chala leta hai.
+        return {
+            "status": "error",
+            "message": str(e)
+        }
