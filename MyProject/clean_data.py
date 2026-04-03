@@ -3,7 +3,8 @@ import os
 
 # 1. Load the data
 # Using 'r' for raw string to avoid path errors on Windows
-path = r"C:/Users/User/Desktop/Web_Scrapper_project/jobs_fake_python.csv"
+# Purana path hatao aur ye likho:
+path = "jobs_fake_python.csv" 
 df = pd.read_csv(path)
 
 # 2. Remove exact duplicates
