@@ -1,7 +1,6 @@
 fastapi
 uvicorn
-pandas
-requests
-beautifulsoup4
 mysql-connector-python
-python-dotenv
+pandas
+beautifulsoup4
+requests
