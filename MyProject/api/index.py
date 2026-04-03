@@ -1,32 +1,56 @@
-import requests
-from bs4 import BeautifulSoup
-import pandas as pd
+import os
+from fastapi import FastAPI
+import mysql.connector
+from fastapi.middleware.cors import CORSMiddleware
 
-jobs = []
+app = FastAPI()
 
-base_url = "https://realpython.github.io/fake-jobs/"
+# CORS allow karna zaroori hai taaki koi bhi website tera data fetch kar sake
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-response = requests.get(base_url)
-soup = BeautifulSoup(response.text, "html.parser")
+def get_db_connection():
+    # Ye saari details Vercel ke "Environment Variables" settings se aayengi
+    return mysql.connector.connect(
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME"),
+        port=os.getenv("DB_PORT", 3306) # Default port 3306 agar set na ho
+    )
 
-listings = soup.find_all("div", class_="card-content")
+@app.get("/")
+def home():
+    return {"message": "Data Engineering Pipeline API is Live!", "endpoint": "/jobs"}
 
-for job in listings:
+@app.get("/jobs")
+def get_jobs():
+    try:
+        conn = get_db_connection()
+        # dictionary=True se data {'column': 'value'} ke format mein aata hai
+        cursor = conn.cursor(dictionary=True)
+        
+        # SQL query tere table name ke hisaab se (final_jfp)
+        cursor.execute("SELECT * FROM final_jfp LIMIT 100")
+        
+        result = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return {
+            "status": "success",
+            "total_records": len(result),
+            "data": result
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
-    title = job.find("h2", class_="title")
-    company = job.find("h3", class_="company")
-    location = job.find("p", class_="location")
-    link = job.find("a")
-
-    jobs.append({
-        "title": title.text.strip() if title else None,
-        "company": company.text.strip() if company else None,
-        "location": location.text.strip() if location else None,
-        "job_link": link["href"] if link else None
-    })
-
-df = pd.DataFrame(jobs)
-
-df.to_csv("jobs_fake_python.csv", index=False)
-
-print("Data saved successfully")
+# Vercel ko batane ke liye ki app yahan hai
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
